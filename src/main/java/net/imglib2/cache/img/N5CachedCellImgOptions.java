@@ -45,7 +45,7 @@ import net.imglib2.img.cell.CellImgFactory;
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-public class N5CachedCellImgOptions extends AbstractReadWriteCachedCellImgOptions {
+public class N5CachedCellImgOptions extends DiskCachedCellImgOptions {
     public final Values values;
 
     N5CachedCellImgOptions(final Values values) {
@@ -76,12 +76,12 @@ public class N5CachedCellImgOptions extends AbstractReadWriteCachedCellImgOption
     }
 
     @Override
-	public AbstractReadWriteCachedCellImgOptions dirtyAccesses(boolean dirty) {
+	public N5CachedCellImgOptions dirtyAccesses(boolean dirty) {
 		return new N5CachedCellImgOptions(values.copy().setDirtyAccesses(dirty));
 	}
 
 	@Override
-	public AbstractReadWriteCachedCellImgOptions volatileAccesses(boolean volatil) {
+	public N5CachedCellImgOptions volatileAccesses(boolean volatil) {
 		return new N5CachedCellImgOptions(values.copy().setVolatileAccesses(volatil));
 	}
 
@@ -106,15 +106,86 @@ public class N5CachedCellImgOptions extends AbstractReadWriteCachedCellImgOption
     }
 
     /**
-     * Specify a loaction where the cache should read and write the cached blocks. If the path already exists, it is
+	 * Specify a loaction where the cache should read and write the cached blocks. If the path already exists, it is
      * assumed to be a valid N5 file with the same configuration as this cache, providing access to previously cached
      * blocks.
-     *
-     * @param cacheDir The path at which the cache will save blocks to N5
-     */
-    public N5CachedCellImgOptions cacheDir(final Path cacheDir) {
-        return new N5CachedCellImgOptions(values.copy().setCacheDir(cacheDir));
-    }
+     * 
+	 * <p>
+	 * This is {@code null} by default, which means that a temporary directory
+	 * will be created.
+	 * </p>
+	 * <p>
+	 * Do not use the same cell cache directory for two images at the same time.
+	 * Set {@code deleteCacheDirectoryOnExit(false)} if you do not want the cell
+	 * cache directory to be deleted when the virtual machine shuts down.
+	 * </p>
+	 *
+	 * @param dir
+	 *            the path to the cell cache directory.
+	 */
+	public N5CachedCellImgOptions cacheDirectory( final Path dir )
+	{
+		return new N5CachedCellImgOptions( values.copy().setCacheDirectory( dir ) );
+	}
+
+	/**
+	 * Set the path to the directory in which to create the temporary cell cache
+	 * directory. This has no effect, if {@link #cacheDirectory(Path)} is
+	 * specified.
+	 * <p>
+	 * This is {@code null} by default, which means that the default system
+	 * temporary-file directory is used.
+	 * </p>
+	 *
+	 * @param dir
+	 *            the path to directory in which to create the temporary cell
+	 *            cache directory.
+	 */
+	public N5CachedCellImgOptions tempDirectory( final Path dir )
+	{
+		return new N5CachedCellImgOptions( values.copy().setTempDirectory( dir ) );
+	}
+
+	/**
+	 * Set the prefix string to be used in generating the name of the temporary
+	 * cell cache directory. Note, that this is not the path in which the
+	 * directory is created but a prefix to the name (e.g. "MyImg"). This has no
+	 * effect, if {@link #cacheDirectory(Path)} is specified.
+	 * <p>
+	 * This is {@code "imglib2"} by default.
+	 * </p>
+	 *
+	 * @param prefix
+	 *            the prefix string to be used in generating the name of the
+	 *            temporary cell cache directory.
+	 */
+	public N5CachedCellImgOptions tempDirectoryPrefix( final String prefix )
+	{
+		return new N5CachedCellImgOptions( values.copy().setTempDirectoryPrefix( prefix ) );
+	}
+
+	/**
+	 * Specify whether the cell cache directory should be automatically deleted
+	 * when the virtual machine shuts down.
+	 * <p>
+	 * This is {@code true} by default.
+	 * </p>
+	 * <p>
+	 * For safety reasons, only cell cache directories that are created by the
+	 * {@link AbstractReadWriteCachedCellImgFactory} are actually marked for deletion. This
+	 * means that either no {@link #cacheDirectory(Path)} is specified (a
+	 * temporary directory is created), or the specified
+	 * {@link #cacheDirectory(Path)} does not exist yet.
+	 * </p>
+	 *
+	 * @param deleteOnExit
+	 *            whether the cell cache directory directory should be
+	 *            automatically deleted when the virtual machine shuts down.
+	 */
+	public N5CachedCellImgOptions deleteCacheDirectoryOnExit( final boolean deleteOnExit )
+	{
+		return new N5CachedCellImgOptions(values.copy().setDeleteCacheDirectoryOnExit( deleteOnExit ));
+	}
 
     /**
      * Set the dimensions of a cell. This is extended or truncated as necessary. For example if
@@ -158,13 +229,12 @@ public class N5CachedCellImgOptions extends AbstractReadWriteCachedCellImgOption
     /**
      * Read-only {@link N5CachedCellImgOptions} values.
      */
-    public static class Values extends AbstractReadWriteCachedCellImgOptions.Values {
+    public static class Values extends DiskCachedCellImgOptions.Values {
         /**
          * Copy constructor.
          */
         Values(final Values that) {
             super(that);
-            this.cacheDir = that.cacheDir;
             this.datasetName = that.datasetName;
             this.compression = that.compression;
         }
@@ -174,7 +244,6 @@ public class N5CachedCellImgOptions extends AbstractReadWriteCachedCellImgOption
 
         Values(final Values base, final Values aug) {
             super(base, aug);
-            cacheDir = aug.cacheDirModified ? aug.cacheDir : base.cacheDir;
             datasetName = aug.datasetNameModified ? aug.datasetName : base.datasetName;
             compression = aug.compressionModified ? aug.compression : base.compression;
         }
@@ -182,7 +251,6 @@ public class N5CachedCellImgOptions extends AbstractReadWriteCachedCellImgOption
         Values( final Values base, final AbstractReadWriteCachedCellImgOptions.Values aug )
 		{
 			super(base, aug);
-            cacheDir = base.cacheDir;
             datasetName = base.datasetName;
             compression = base.compression;
 		}
@@ -191,15 +259,9 @@ public class N5CachedCellImgOptions extends AbstractReadWriteCachedCellImgOption
             return new N5CachedCellImgOptions(new Values(this));
         }
 
-        private Path cacheDir = null;
-
         private String datasetName = "cache";
 
         private Compression compression = new GzipCompression();
-
-        public Path cacheDir() {
-            return cacheDir;
-        }
 
         public String datasetName() {
             return datasetName;
@@ -209,11 +271,38 @@ public class N5CachedCellImgOptions extends AbstractReadWriteCachedCellImgOption
             return compression;
         }
 
-        private boolean cacheDirModified = false;
-
         private boolean datasetNameModified = false;
 
         private boolean compressionModified = false;
+
+        @Override
+        Values setCacheDirectory( final Path dir )
+		{
+			super.setCacheDirectory(dir);
+			return this;
+		}
+
+        @Override
+        Values setTempDirectory( final Path dir )
+		{
+			super.setTempDirectory(dir);
+			return this;
+		}
+
+        @Override
+        Values setTempDirectoryPrefix( final String prefix )
+		{
+			super.setTempDirectoryPrefix(prefix);
+			return this;
+		}
+
+        @Override
+        Values setDeleteCacheDirectoryOnExit( final boolean b )
+		{
+			super.setDeleteCacheDirectoryOnExit(b);
+			return this;
+		}
+
 
         @Override
         Values setDirtyAccesses(final boolean b) {
@@ -264,12 +353,6 @@ public class N5CachedCellImgOptions extends AbstractReadWriteCachedCellImgOption
             return this;
         }
 
-        Values setCacheDir(final Path cacheDir) {
-            this.cacheDir = cacheDir;
-            cacheDirModified = true;
-            return this;
-        }
-
         Values setDatasetName(final String datasetName) {
             this.datasetName = datasetName;
             datasetNameModified = true;
@@ -292,16 +375,6 @@ public class N5CachedCellImgOptions extends AbstractReadWriteCachedCellImgOption
             sb.append(super.toString());
             sb.append("N5CachedCellImgOptions = {");
 
-            sb.append("cacheDir = ");
-            if (null != cacheDir) {
-                sb.append(cacheDir.toAbsolutePath().toString());
-            } else {
-                sb.append("null");
-            }
-            if (cacheDirModified)
-                sb.append( " [m]" );
-            sb.append(", ");
-
             sb.append("datasetName = ");
             sb.append(datasetName);
             if (datasetNameModified)
@@ -309,7 +382,7 @@ public class N5CachedCellImgOptions extends AbstractReadWriteCachedCellImgOption
             sb.append(", ");
 
             sb.append("compression = ");
-            if (null != cacheDir) {
+            if (null != compression) {
                 sb.append(compression.getType());
             } else {
                 sb.append("null");
