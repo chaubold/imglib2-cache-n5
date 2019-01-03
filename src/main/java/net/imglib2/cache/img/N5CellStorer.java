@@ -53,7 +53,6 @@ import org.janelia.saalfeldlab.n5.DataBlock;
 import org.janelia.saalfeldlab.n5.DatasetAttributes;
 import org.janelia.saalfeldlab.n5.N5Writer;
 
-import net.imglib2.img.basictypeaccess.array.ArrayDataAccess;
 import net.imglib2.img.cell.Cell;
 import net.imglib2.util.Fraction;
 import net.imglib2.util.Intervals;
@@ -66,7 +65,7 @@ import net.imglib2.util.Intervals;
  * @author Carsten Haubold, KNIME GmbH, Konstanz, Germany
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
-public class N5CellStorer<A extends ArrayDataAccess<A>> implements CellStorer<A> {
+public class N5CellStorer<A> implements CellStorer<A> {
 
     private final N5Writer m_n5;
 

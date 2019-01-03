@@ -48,9 +48,7 @@ package net.imglib2.cache.img;
 
 import java.io.IOException;
 
-import net.imglib2.cache.img.CellLoader;
 import net.imglib2.img.Img;
-import net.imglib2.img.basictypeaccess.array.ArrayDataAccess;
 import net.imglib2.img.cell.AbstractCellImg;
 import net.imglib2.img.cell.Cell;
 
@@ -63,7 +61,7 @@ import net.imglib2.img.cell.Cell;
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  * @see CellLoader
  */
-public interface CellStorer<A extends ArrayDataAccess<A>> {
+public interface CellStorer<A> {
 
     /**
      * @param cell the cell to store. The cell is given as a {@link Img} with minimum and maximum reflecting the part of

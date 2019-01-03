@@ -35,7 +35,6 @@
 package net.imglib2.cache.img;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import net.imglib2.Dimensions;
@@ -187,7 +186,8 @@ public class N5CachedCellImgFactory<T extends NativeType<T>> extends AbstractRea
             final CacheLoader<Long, ? extends Cell<? extends A>> cacheLoader, final CellLoader<T> cellLoader,
             final T type, final N5CachedCellImgOptions additionalOptions) {
         @SuppressWarnings({ "unchecked", "rawtypes" })
-        final N5CachedCellImg<T, A> img = (N5CachedCellImg<T, A>)create(dimensions, cacheLoader, cellLoader, type, (NativeTypeFactory) type.getNativeTypeFactory(),
+        final N5CachedCellImg<T, A> img = (N5CachedCellImg<T, A>)create(dimensions, cacheLoader, cellLoader, type, 
+        		(NativeTypeFactory) type.getNativeTypeFactory(),
         additionalOptions);
         return img;
     }
@@ -205,7 +205,7 @@ public class N5CachedCellImgFactory<T extends NativeType<T>> extends AbstractRea
     }
 
     @Override
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     protected <A extends ArrayDataAccess<A>> ReadWriteCellCache<A> createCellCache(
             AbstractReadWriteCachedCellImgOptions options, CellGrid grid, CacheLoader<Long, Cell<A>> backingLoader,
             T type, Fraction entitiesPerPixel) {
@@ -219,16 +219,17 @@ public class N5CachedCellImgFactory<T extends NativeType<T>> extends AbstractRea
         }
 
         try {
-            Path resultCacheLocation = n5optionValues.cacheDir();
-            if (resultCacheLocation == null) {
-                // fall back to tmp dir
-                resultCacheLocation = Files.createTempDirectory("n5-cell-cache");
-            }
+            Path resultCacheLocation = DiskCachedCellImgFactory.createBlockCachePath(n5optionValues);
 
-            // TODO: handle n5optionValues.dirtyAccesses()
-            return (ReadWriteCellCache<A>)(new N5CellCache<>(resultCacheLocation, n5optionValues.datasetName(), 
+            if (n5optionValues.dirtyAccesses()) {
+                return (ReadWriteCellCache<A>)(new DirtyN5CellCache(resultCacheLocation, n5optionValues.datasetName(), 
+                grid, backingLoader, entitiesPerPixel, AccessIo.get(type, n5optionValues.accessFlags()),
+                n5optionValues.compression(), type));
+            } else {
+                return (ReadWriteCellCache<A>)(new N5CellCache<>(resultCacheLocation, n5optionValues.datasetName(), 
                     grid, backingLoader, entitiesPerPixel, AccessIo.get(type, n5optionValues.accessFlags()),
                     n5optionValues.compression(), type));
+            }
         }
         catch ( final IOException e )
 		{

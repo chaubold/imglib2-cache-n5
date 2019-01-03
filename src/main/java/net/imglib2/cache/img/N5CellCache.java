@@ -43,7 +43,9 @@ import net.imglib2.util.Intervals;
  * n5 Image.
  * <p>
  * Blocks which are not in the output n5 cache (yet) are obtained from a backing
- * {@link CacheLoader}.
+ * {@link CacheLoader}. The availability of N5 blocks is managed by a HashSet m_cachedSet, 
+ * because N5 currently does not provide a method to check whether a block exists,
+ * it simply returns zeros if that's not the case.
  * </p>
  * <p>
  * <em> A {@link N5CellCache} should be connected to a in-memory cache through
@@ -102,7 +104,8 @@ public class N5CellCache<T extends NativeType<T>, A extends ArrayDataAccess<A>>
 
     /**
      * Creates a {@link N5CellCache} with the given parameters, the cache will cache
-     * results to the given location.
+     * results to the given location. If the N5 file and dataset already exist with matching block size,
+     * the cache will use the blocks that are already stored there.
      *
      * @param resultCacheLocation the path to the location where this cache will
      *                            store its cells
@@ -159,7 +162,6 @@ public class N5CellCache<T extends NativeType<T>, A extends ArrayDataAccess<A>>
             }
 
             N5CellCache.forEachPresentBlockIdx(datasetLoc, m_dataset, m_grid, m_cachedSet::add);
-
         } else {
             fswriter.createDataset(m_dataset, imgDims, cellDims, dataType, compression);
         }
@@ -211,7 +213,10 @@ public class N5CellCache<T extends NativeType<T>, A extends ArrayDataAccess<A>>
 
             final long numEntities = m_entitiesPerPixel.mulCeil(Intervals.numElements(cellDims));
             final A array = m_creator.createArray((int) numEntities);
-            final SingleCellArrayImg<T, A> img = new SingleCellArrayImg<>(cellDims, cellMin, array, new AlwaysClean());
+            
+            @SuppressWarnings( { "rawtypes", "unchecked" } )
+            final SingleCellArrayImg<T, A> img = new SingleCellArrayImg(cellDims, cellMin, array, new AlwaysClean());
+            @SuppressWarnings( "unchecked" )
             final NativeTypeFactory<T, A> info = (NativeTypeFactory<T, A>) m_type.getNativeTypeFactory();
             img.setLinkedType(info.createLinkedType(img));
             m_loader.load(img);
