@@ -46,14 +46,14 @@ import net.imglib2.img.cell.CellImgFactory;
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
 public class N5CachedCellImgOptions extends DiskCachedCellImgOptions {
-    public final Values values;
+    private final Values values;
 
     N5CachedCellImgOptions(final Values values) {
         this.values = values;
     }
 
     @Override
-	Values values() {
+	public Values values() {
 		return values;
 	}
 
