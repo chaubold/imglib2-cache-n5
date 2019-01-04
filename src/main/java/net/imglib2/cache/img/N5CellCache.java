@@ -61,7 +61,7 @@ import net.imglib2.util.Intervals;
  * @author Marcel Wiedenmann, KNIME GmbH, Konstanz, Germany
  */
 public class N5CellCache<T extends NativeType<T>, A extends ArrayDataAccess<A>>
-        implements CacheRemover<Long, Cell<A>>, CacheLoader<Long, Cell<A>> {
+        implements ReadWriteCellCache<A> {
 
     // the I/O componentes
     private final N5Reader m_reader;
