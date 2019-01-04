@@ -193,7 +193,7 @@ public class N5CachedCellImgFactory<T extends NativeType<T>> extends AbstractRea
     }
 
     @Override
-    AbstractReadWriteCachedCellImgOptions mergeWithFactoryOptions(
+    N5CachedCellImgOptions mergeWithFactoryOptions(
             AbstractReadWriteCachedCellImgOptions userProvidedOptions) {
         return (userProvidedOptions == null) ? factoryOptions : factoryOptions.merge(userProvidedOptions);
     }
